@@ -21,6 +21,33 @@ variable "region" {
   default     = "ap-northeast-2"
 }
 
+# ============================================================================
+# Route 53 / ACM
+# ============================================================================
+variable "domain_name" {
+  type        = string
+  description = "도메인 이름 (예: seolphung.com)"
+  default     = ""
+}
+
+variable "enable_route53" {
+  type        = bool
+  description = "Route 53 Hosted Zone 생성 여부"
+  default     = false
+}
+
+variable "enable_acm" {
+  type        = bool
+  description = "ACM SSL 인증서 생성 여부"
+  default     = false
+}
+
+variable "acm_subject_alternative_names" {
+  type        = list(string)
+  description = "ACM 인증서 추가 도메인 (와일드카드 포함)"
+  default     = []
+}
+
 variable "vpc_cidr" {
   type        = string
   description = "VPC CIDR. dev/prod 간 충돌이 없도록 분리한다."
@@ -46,8 +73,8 @@ variable "tags" {
 
 variable "enable_nat_gateway" {
   type        = bool
-  description = "NAT Gateway 생성 여부. dev 는 비용 절감을 위해 기본 false (필요 시 tfvars 에서 true)."
-  default     = false
+  description = "NAT Gateway 생성 여부. EKS 노드가 인터넷 연결이 필요하므로 true로 설정."
+  default     = true
 }
 
 variable "single_nat_gateway" {
@@ -102,5 +129,113 @@ variable "ecr_image_tag_mutability" {
   validation {
     condition     = contains(["IMMUTABLE", "MUTABLE"], var.ecr_image_tag_mutability)
     error_message = "ecr_image_tag_mutability 는 'IMMUTABLE' 또는 'MUTABLE' 만 허용된다."
+  }
+}
+
+# ============================================================================
+# RDS
+# ============================================================================
+variable "rds_instance_class" {
+  type        = string
+  description = "RDS 인스턴스 클래스"
+  default     = "db.t4g.micro"
+}
+
+# ============================================================================
+# Redis
+# ============================================================================
+variable "redis_node_type" {
+  type        = string
+  description = "ElastiCache Redis 노드 타입"
+  default     = "cache.t4g.micro"
+}
+
+# ============================================================================
+# EKS
+# ============================================================================
+variable "eks_cluster_version" {
+  type        = string
+  description = "EKS 클러스터 버전"
+  default     = "1.30"
+}
+
+variable "eks_node_groups" {
+  type = map(object({
+    instance_types = list(string)
+    desired_size   = number
+    min_size       = number
+    max_size       = number
+    disk_size      = optional(number, 50)
+    capacity_type  = optional(string, "ON_DEMAND")
+    taints = optional(list(object({
+      key    = string
+      value  = string
+      effect = string
+    })), [])
+    labels = optional(map(string), {})
+  }))
+  description = "EKS Managed Node Group 설정"
+  default = {
+    general = {
+      instance_types = ["t3.medium"]
+      desired_size   = 2
+      min_size       = 2
+      max_size       = 5
+      capacity_type  = "ON_DEMAND"
+      labels = {
+        workload = "general"
+      }
+    }
+  }
+}
+
+# ============================================================================
+# IRSA Service Accounts
+# ============================================================================
+variable "service_accounts" {
+  type = map(object({
+    namespace       = string
+    service_account = string
+    policy_arns     = optional(list(string), [])
+    inline_policies = optional(map(string), {})
+  }))
+  description = "IRSA를 위한 서비스 어카운트 설정"
+  default = {
+    pipeline-service = {
+      namespace       = "agent-t"
+      service_account = "pipeline-service"
+      policy_arns     = []
+      inline_policies = {}
+    }
+    agent-service = {
+      namespace       = "agent-t"
+      service_account = "agent-service"
+      policy_arns     = []
+      inline_policies = {}
+    }
+    simulation-service = {
+      namespace       = "agent-t"
+      service_account = "simulation-service"
+      policy_arns     = []
+      inline_policies = {}
+    }
+    analysis-service = {
+      namespace       = "agent-t"
+      service_account = "analysis-service"
+      policy_arns     = []
+      inline_policies = {}
+    }
+    report-service = {
+      namespace       = "agent-t"
+      service_account = "report-service"
+      policy_arns     = []
+      inline_policies = {}
+    }
+    aws-load-balancer-controller = {
+      namespace       = "kube-system"
+      service_account = "aws-load-balancer-controller"
+      policy_arns     = []
+      inline_policies = {}
+    }
   }
 }

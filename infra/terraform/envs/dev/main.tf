@@ -70,19 +70,24 @@ module "secrets_manager" {
 module "rds" {
   source = "../../modules/rds"
 
-  project_name = var.project_name
-  env          = var.env
-  tags         = local.common_tags
-  # 4단계 추가 인풋: vpc_id, intra_subnet_ids
+  project_name           = var.project_name
+  env                    = var.env
+  vpc_id                 = module.vpc.vpc_id
+  private_db_subnet_ids  = module.vpc.private_db_subnet_ids
+  instance_class         = var.rds_instance_class
+  db_secret_arn          = module.secrets_manager.db_credentials_secret_arn
+  tags                   = local.common_tags
 }
 
 module "redis" {
   source = "../../modules/redis"
 
-  project_name = var.project_name
-  env          = var.env
-  tags         = local.common_tags
-  # 4단계 추가 인풋: vpc_id, intra_subnet_ids
+  project_name           = var.project_name
+  env                    = var.env
+  vpc_id                 = module.vpc.vpc_id
+  private_db_subnet_ids  = module.vpc.private_db_subnet_ids
+  node_type              = var.redis_node_type
+  tags                   = local.common_tags
 }
 
 module "bedrock" {
@@ -90,6 +95,7 @@ module "bedrock" {
 
   project_name = var.project_name
   env          = var.env
+  region       = var.region
   tags         = local.common_tags
 }
 
@@ -97,19 +103,26 @@ module "bedrock" {
 module "eks" {
   source = "../../modules/eks"
 
-  project_name = var.project_name
-  env          = var.env
-  tags         = local.common_tags
-  # 5단계 추가 인풋: vpc_id, private_subnet_ids
+  project_name            = var.project_name
+  env                     = var.env
+  vpc_id                  = module.vpc.vpc_id
+  private_app_subnet_ids  = module.vpc.private_app_subnet_ids
+  kubernetes_version      = var.eks_cluster_version
+  node_groups             = var.eks_node_groups
+  tags                    = local.common_tags
 }
 
 module "iam_irsa" {
   source = "../../modules/iam-irsa"
 
-  project_name = var.project_name
-  env          = var.env
-  tags         = local.common_tags
-  # 5단계 추가 인풋: oidc_provider_arn, oidc_provider_url
+  project_name      = var.project_name
+  env               = var.env
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+  service_accounts  = local.service_accounts_with_policies
+  tags              = local.common_tags
+
+  depends_on = [module.alb_controller, module.bedrock]
 }
 
 module "alb_controller" {
@@ -119,7 +132,6 @@ module "alb_controller" {
   env          = var.env
   region       = var.region
   tags         = local.common_tags
-  # 5단계 추가 인풋: cluster_name, oidc_provider_arn, oidc_provider_url
 }
 
 module "argocd" {
@@ -128,5 +140,39 @@ module "argocd" {
   project_name = var.project_name
   env          = var.env
   tags         = local.common_tags
-  # 5단계 추가 인풋: cluster_name (helm/kubernetes provider 활성화 후)
 }
+
+# === 6단계: DNS / SSL (선택) ================================================
+module "route53" {
+  count  = var.enable_route53 ? 1 : 0
+  source = "../../modules/route53"
+
+  project_name = var.project_name
+  env          = var.env
+  domain_name  = var.domain_name
+  tags         = local.common_tags
+
+  # ALB 연결은 Ingress 생성 후 수동으로 추가하거나,
+  # data source로 Ingress에서 ALB 정보 가져와서 연결
+  alb_dns_name    = ""  # 수동 설정 또는 후속 apply에서 추가
+  alb_zone_id     = ""
+  alb_subdomains  = {}
+}
+
+module "acm" {
+  count  = var.enable_acm ? 1 : 0
+  source = "../../modules/acm"
+
+  project_name              = var.project_name
+  env                       = var.env
+  domain_name               = var.domain_name
+  subject_alternative_names = var.acm_subject_alternative_names
+  route53_zone_id           = var.enable_route53 ? module.route53[0].zone_id : ""
+  enable_dns_validation     = var.enable_route53
+  tags                      = local.common_tags
+
+  depends_on = [module.route53]
+}
+
+# ==== Data Sources ==========================================================
+data "aws_caller_identity" "current" {}

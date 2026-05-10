@@ -23,15 +23,14 @@ terraform {
   # ===========================================================================
   # Remote backend (S3 + DynamoDB)
   # ---------------------------------------------------------------------------
-  # 부트스트랩 절차는 docs/infrastructure.md → "Terraform 실행 순서" 참조.
-  # backend 활성화 후, `terraform init -migrate-state` 로 로컬 state → 원격 이전.
+  # State 파일을 S3에 저장하고 DynamoDB로 lock 관리
   # ===========================================================================
-  #
-  # backend "s3" {
-  #   bucket         = "agent-t-tfstate-<aws-account-id>"
-  #   key            = "envs/dev/terraform.tfstate"
-  #   region         = "ap-northeast-2"
-  #   dynamodb_table = "agent-t-tflock"
-  #   encrypt        = true
-  # }
+
+  backend "s3" {
+    bucket         = "agent-t-terraform-state-dev"
+    key            = "dev/terraform.tfstate"
+    region         = "ap-northeast-2"
+    dynamodb_table = "agent-t-terraform-locks"
+    encrypt        = true
+  }
 }
