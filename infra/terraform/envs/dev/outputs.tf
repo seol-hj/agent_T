@@ -119,10 +119,55 @@ output "ecr_registry_id" {
 }
 
 # === 4단계 이후 ============================================================
-# output "rds_endpoint"        { value = module.rds.endpoint sensitive = true }
-# output "redis_endpoint"      { value = module.redis.primary_endpoint }
+output "rds_endpoint" {
+  description = "RDS 엔드포인트"
+  value       = module.rds.db_endpoint
+  sensitive   = true
+}
+
+output "redis_endpoint" {
+  description = "Redis 엔드포인트"
+  value       = module.redis.redis_endpoint
+}
 #
 # === 5단계 이후 ============================================================
-# output "eks_cluster_name"     { value = module.eks.cluster_name }
-# output "eks_cluster_endpoint" { value = module.eks.cluster_endpoint }
-# output "eks_oidc_provider_arn"{ value = module.eks.oidc_provider_arn }
+output "cluster_name" {
+  description = "EKS 클러스터 이름"
+  value       = module.eks.cluster_name
+}
+
+output "cluster_endpoint" {
+  description = "EKS 클러스터 엔드포인트"
+  value       = module.eks.cluster_endpoint
+}
+
+output "cluster_oidc_provider_arn" {
+  description = "EKS OIDC provider ARN"
+  value       = module.eks.oidc_provider_arn
+}
+
+output "alb_controller_role_arn" {
+  description = "AWS Load Balancer Controller IRSA Role ARN"
+  value       = module.iam_irsa.role_arns["aws-load-balancer-controller"]
+}
+
+# === 6단계: DNS / SSL =======================================================
+output "route53_zone_id" {
+  description = "Route 53 Hosted Zone ID"
+  value       = var.enable_route53 ? module.route53[0].zone_id : ""
+}
+
+output "route53_name_servers" {
+  description = "Route 53 Name Servers - 다른 계정의 도메인 NS 레코드를 이 값으로 설정하세요"
+  value       = var.enable_route53 ? module.route53[0].name_servers : []
+}
+
+output "acm_certificate_arn" {
+  description = "ACM 인증서 ARN - Ingress annotation에 사용"
+  value       = var.enable_acm ? module.acm[0].certificate_arn : ""
+}
+
+output "acm_certificate_status" {
+  description = "ACM 인증서 상태 (ISSUED면 사용 가능)"
+  value       = var.enable_acm ? module.acm[0].certificate_status : ""
+}

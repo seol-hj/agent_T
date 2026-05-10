@@ -11,4 +11,27 @@ locals {
     },
     var.tags,
   )
+
+  # Policy ARNs (계산 가능한 형태)
+  alb_controller_policy_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-alb-controller-policy"
+  bedrock_policy_arn        = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${local.name_prefix}-bedrock-invoke"
+
+  # IRSA service accounts with policies attached
+  service_accounts_with_policies = merge(
+    var.service_accounts,
+    {
+      aws-load-balancer-controller = merge(
+        var.service_accounts["aws-load-balancer-controller"],
+        {
+          policy_arns = [local.alb_controller_policy_arn]
+        }
+      )
+      agent-service = merge(
+        var.service_accounts["agent-service"],
+        {
+          policy_arns = [local.bedrock_policy_arn]
+        }
+      )
+    }
+  )
 }
