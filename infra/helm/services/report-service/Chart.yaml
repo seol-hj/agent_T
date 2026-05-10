@@ -1,0 +1,12 @@
+apiVersion: v2
+name: report-service
+description: Agent T Report Service - Policy Report Generation (Reporter)
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - report
+  - policy
+  - llm
+maintainers:
+  - name: Agent T Team

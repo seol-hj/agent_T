@@ -1,0 +1,61 @@
+# ============================================================================
+# Gateway - Prod Environment Override
+# HTTPS + ACM Certificate + WAF
+# ============================================================================
+
+ingress:
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # ACM Certificate ARN (실제 값으로 교체)
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:123456789012:certificate/REPLACE_ME
+    # WAF ACL (선택사항)
+    # alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:ap-northeast-2:123456789012:regional/webacl/REPLACE_ME
+    alb.ingress.kubernetes.io/tags: Environment=prod,ManagedBy=kubernetes,Tier=production
+
+  hosts:
+    - host: agent-t.prod.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port: 3000
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: api-service
+              port: 8000
+        - path: /agent
+          pathType: Prefix
+          backend:
+            service:
+              name: agent-service
+              port: 8000
+        - path: /simulation
+          pathType: Prefix
+          backend:
+            service:
+              name: simulation-service
+              port: 8000
+        - path: /analysis
+          pathType: Prefix
+          backend:
+            service:
+              name: analysis-service
+              port: 8000
+        - path: /reports
+          pathType: Prefix
+          backend:
+            service:
+              name: report-service
+              port: 8000
+
+  tls:
+    - secretName: agent-t-tls
+      hosts:
+        - agent-t.prod.com

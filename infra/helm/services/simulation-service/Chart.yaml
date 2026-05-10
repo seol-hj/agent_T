@@ -1,0 +1,13 @@
+apiVersion: v2
+name: simulation-service
+description: Agent T Simulation Service - SUMO Simulation (Network + Demand + Runner)
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - sumo
+  - simulation
+  - network
+  - demand
+maintainers:
+  - name: Agent T Team

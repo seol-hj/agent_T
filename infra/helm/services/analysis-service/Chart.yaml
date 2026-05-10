@@ -1,0 +1,12 @@
+apiVersion: v2
+name: analysis-service
+description: Agent T Analysis Service - KPI Analysis (Analyzer)
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - analysis
+  - kpi
+  - metrics
+maintainers:
+  - name: Agent T Team

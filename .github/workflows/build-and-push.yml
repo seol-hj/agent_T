@@ -1,0 +1,132 @@
+# ============================================================================
+# Reusable Workflow: Docker Build & Push to ECR
+# 여러 서비스에서 재사용 가능한 공통 빌드 workflow
+# ============================================================================
+
+name: Build and Push Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        required: true
+        type: string
+        description: "Service name (e.g., api-service)"
+      dockerfile-path:
+        required: true
+        type: string
+        description: "Path to Dockerfile (e.g., apps/api-service/Dockerfile)"
+      context-path:
+        required: true
+        type: string
+        description: "Docker build context (e.g., apps/api-service)"
+      ecr-repository:
+        required: true
+        type: string
+        description: "ECR repository name (e.g., agent-t-dev/api-service)"
+      aws-region:
+        required: false
+        type: string
+        default: "ap-northeast-2"
+      test-command:
+        required: false
+        type: string
+        description: "Test command to run (optional)"
+        default: ""
+      skip-tests:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      aws-access-key-id:
+        required: true
+      aws-secret-access-key:
+        required: true
+    outputs:
+      image-tag:
+        description: "Docker image tag (git SHA)"
+        value: ${{ jobs.build-and-push.outputs.image-tag }}
+      image-uri:
+        description: "Full Docker image URI"
+        value: ${{ jobs.build-and-push.outputs.image-uri }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+      image-uri: ${{ steps.meta.outputs.image-uri }}
+
+    steps:
+      # ===== Checkout ==========================================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ===== Set up Docker Buildx =============================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ===== Configure AWS Credentials ========================================
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: ${{ inputs.aws-region }}
+
+      # ===== Login to ECR ======================================================
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ===== Extract metadata ==================================================
+      - name: Extract metadata
+        id: meta
+        run: |
+          # Git SHA (short)
+          IMAGE_TAG="sha-$(echo ${{ github.sha }} | cut -c1-7)"
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+          # ECR registry
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          ECR_REPOSITORY="${{ inputs.ecr-repository }}"
+
+          # Full image URI
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+          echo "Image tag: $IMAGE_TAG"
+          echo "Image URI: $IMAGE_URI"
+
+      # ===== Run tests (optional) ==============================================
+      - name: Run tests
+        if: ${{ !inputs.skip-tests && inputs.test-command != '' }}
+        working-directory: ${{ inputs.context-path }}
+        run: |
+          echo "Running tests for ${{ inputs.service-name }}..."
+          ${{ inputs.test-command }}
+
+      # ===== Build and push Docker image =======================================
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context-path }}
+          file: ${{ inputs.dockerfile-path }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image-uri }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      # ===== Summary ===========================================================
+      - name: Summary
+        run: |
+          echo "### ✅ Build and Push Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** ${{ inputs.service-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag:** ${{ steps.meta.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image URI:** ${{ steps.meta.outputs.image-uri }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,86 @@
+# ============================================================================
+# Gateway - Default Values
+# ALB Ingress with path-based routing
+# ============================================================================
+
+# Ingress 설정
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    # ALB 설정
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/success-codes: "200-299"
+
+    # 태그
+    alb.ingress.kubernetes.io/tags: Environment=dev,ManagedBy=kubernetes,Project=agent-t
+
+  # 호스트 설정
+  hosts:
+    - host: agent-t.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port: 3000
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: api-service
+              port: 8000
+        - path: /agent
+          pathType: Prefix
+          backend:
+            service:
+              name: agent-service
+              port: 8000
+        - path: /simulation
+          pathType: Prefix
+          backend:
+            service:
+              name: simulation-service
+              port: 8000
+        - path: /analysis
+          pathType: Prefix
+          backend:
+            service:
+              name: analysis-service
+              port: 8000
+        - path: /reports
+          pathType: Prefix
+          backend:
+            service:
+              name: report-service
+              port: 8000
+
+  tls: []
+
+# Service 이름 매핑 (참조용)
+services:
+  frontend:
+    name: frontend
+    port: 3000
+  apiService:
+    name: api-service
+    port: 8000
+  agentService:
+    name: agent-service
+    port: 8000
+  simulationService:
+    name: simulation-service
+    port: 8000
+  analysisService:
+    name: analysis-service
+    port: 8000
+  reportService:
+    name: report-service
+    port: 8000

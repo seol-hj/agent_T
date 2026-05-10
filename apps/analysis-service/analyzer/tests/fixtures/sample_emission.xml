@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emission-export xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <timestep time="0.00">
+        <vehicle id="veh_0" eclass="HBEFA3/PC_G_EU4" CO2="2640.00" CO="164.80" HC="0.81"
+                 NOx="0.51" PMx="0.06" fuel="1137.48" electricity="0.00" noise="68.24"/>
+    </timestep>
+    <timestep time="60.00">
+        <vehicle id="veh_0" eclass="HBEFA3/PC_G_EU4" CO2="2850.00" CO="178.20" HC="0.88"
+                 NOx="0.55" PMx="0.07" fuel="1228.91" electricity="0.00" noise="69.15"/>
+        <vehicle id="veh_1" eclass="HBEFA3/PC_G_EU4" CO2="2720.00" CO="170.50" HC="0.84"
+                 NOx="0.53" PMx="0.06" fuel="1172.34" electricity="0.00" noise="68.78"/>
+    </timestep>
+    <timestep time="120.00">
+        <vehicle id="veh_0" eclass="HBEFA3/PC_G_EU4" CO2="2900.00" CO="182.10" HC="0.90"
+                 NOx="0.57" PMx="0.07" fuel="1250.23" electricity="0.00" noise="69.45"/>
+        <vehicle id="veh_1" eclass="HBEFA3/PC_G_EU4" CO2="2780.00" CO="174.30" HC="0.86"
+                 NOx="0.54" PMx="0.07" fuel="1198.76" electricity="0.00" noise="69.02"/>
+        <vehicle id="veh_2" eclass="HBEFA3/PC_G_EU4" CO2="2700.00" CO="169.20" HC="0.83"
+                 NOx="0.52" PMx="0.06" fuel="1164.12" electricity="0.00" noise="68.65"/>
+    </timestep>
+</emission-export>

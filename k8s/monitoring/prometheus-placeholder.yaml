@@ -1,0 +1,114 @@
+---
+# Prometheus 설치 Placeholder
+#
+# 실제 설치는 Helm Chart 사용 권장:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm install prometheus prometheus-community/kube-prometheus-stack \
+#     --namespace monitoring --create-namespace
+
+# 이 파일은 구조 참고용
+
+---
+# Prometheus Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+
+---
+# Prometheus ConfigMap (scrape config 예시)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      # Kubernetes API server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      # Kubernetes nodes
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+      # Kubernetes pods (애플리케이션 메트릭)
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # prometheus.io/scrape=true 어노테이션이 있는 Pod만 스크랩
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          # prometheus.io/port 어노테이션에서 포트 읽기
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          # prometheus.io/path 어노테이션에서 경로 읽기
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+
+      # Agent-T services (예시)
+      - job_name: 'agent-t-services'
+        static_configs:
+          - targets:
+              - 'orchestrator:8001'
+              - 'scenario-builder:8002'
+              - 'network-builder:8003'
+              - 'demand-builder:8004'
+              - 'simulator-runner:8005'
+              - 'analyzer:8006'
+              - 'reporter:8007'
+              - 'pipeline:8000'
+        metrics_path: '/metrics'
+
+---
+# ServiceMonitor for Agent-T services
+# (Prometheus Operator 사용 시)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: agent-t-services
+  namespace: agent-t
+  labels:
+    app: agent-t
+spec:
+  selector:
+    matchLabels:
+      monitoring: "true"
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+
+---
+# Grafana Placeholder
+# Helm Chart 설치 권장:
+#   helm install grafana grafana/grafana \
+#     --namespace monitoring \
+#     --set adminPassword=<password>
+
+# Grafana Dashboard는 별도 JSON 파일로 관리
+# docs/grafana-dashboards/ 참조

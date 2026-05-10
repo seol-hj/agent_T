@@ -1,0 +1,62 @@
+# ============================================================================
+# CI Workflow: agent-service
+# ============================================================================
+
+name: CI - Agent Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/agent-service/**"
+      - ".github/workflows/ci-agent-service.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "apps/agent-service/**"
+
+env:
+  SERVICE_NAME: agent-service
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ecr-repo=agent-t-prod/agent-service" >> $GITHUB_OUTPUT
+          else
+            echo "ecr-repo=agent-t-dev/agent-service" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: ./.github/workflows/build-and-push.yml
+        with:
+          service-name: ${{ env.SERVICE_NAME }}
+          dockerfile-path: apps/agent-service/Dockerfile
+          context-path: apps/agent-service
+          ecr-repository: ${{ steps.env.outputs.ecr-repo }}
+          test-command: |
+            pip install -r requirements.txt
+            pytest tests/ --cov=app
+        secrets:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  build-validation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: apps/agent-service
+          file: apps/agent-service/Dockerfile
+          push: false
+          tags: ${{ env.SERVICE_NAME }}:${{ github.sha }}

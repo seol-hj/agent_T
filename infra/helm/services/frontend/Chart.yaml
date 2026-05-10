@@ -1,0 +1,12 @@
+apiVersion: v2
+name: frontend
+description: Agent T Frontend Service - REST API Gateway
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - api
+  - rest
+  - gateway
+maintainers:
+  - name: Agent T Team

@@ -1,0 +1,62 @@
+# ============================================================================
+# CI Workflow: analysis-service
+# ============================================================================
+
+name: CI - Analysis Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/analysis-service/**"
+      - ".github/workflows/ci-analysis-service.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "apps/analysis-service/**"
+
+env:
+  SERVICE_NAME: analysis-service
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ecr-repo=agent-t-prod/analysis-service" >> $GITHUB_OUTPUT
+          else
+            echo "ecr-repo=agent-t-dev/analysis-service" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: ./.github/workflows/build-and-push.yml
+        with:
+          service-name: ${{ env.SERVICE_NAME }}
+          dockerfile-path: apps/analysis-service/Dockerfile
+          context-path: apps/analysis-service
+          ecr-repository: ${{ steps.env.outputs.ecr-repo }}
+          test-command: |
+            pip install -r requirements.txt
+            pytest tests/
+        secrets:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  build-validation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: apps/analysis-service
+          file: apps/analysis-service/Dockerfile
+          push: false
+          tags: ${{ env.SERVICE_NAME }}:${{ github.sha }}

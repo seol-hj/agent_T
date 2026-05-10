@@ -1,0 +1,126 @@
+# ============================================================================
+# Terraform Plan Workflow
+# PR 시 자동으로 terraform fmt, validate, plan 수행
+# ============================================================================
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-plan.yml"
+
+env:
+  AWS_REGION: ap-northeast-2
+  TF_VERSION: 1.6.0
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, prod]
+
+    steps:
+      # ===== Checkout ==========================================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ===== Setup Terraform ===================================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # ===== Configure AWS Credentials =========================================
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ===== Terraform Format Check ============================================
+      - name: Terraform Format Check
+        id: fmt
+        working-directory: infra/terraform/envs/${{ matrix.environment }}
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      # ===== Terraform Init ====================================================
+      - name: Terraform Init
+        id: init
+        working-directory: infra/terraform/envs/${{ matrix.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=agent-t-${{ matrix.environment }}-terraform-state" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+
+      # ===== Terraform Validate ================================================
+      - name: Terraform Validate
+        id: validate
+        working-directory: infra/terraform/envs/${{ matrix.environment }}
+        run: terraform validate -no-color
+
+      # ===== Terraform Plan ====================================================
+      - name: Terraform Plan
+        id: plan
+        working-directory: infra/terraform/envs/${{ matrix.environment }}
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+        continue-on-error: true
+
+      # ===== Comment PR ========================================================
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/terraform/envs/${{ matrix.environment }}/plan.txt', 'utf8');
+            const output = `### Terraform Plan - ${{ matrix.environment }}
+
+            #### Terraform Format and Style 🖌 \`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️ \`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖 \`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖 \`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+
+            </details>
+
+            **Pusher:** @${{ github.actor }}
+            **Action:** ${{ github.event_name }}`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      # ===== Upload Plan Artifact ==============================================
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: infra/terraform/envs/${{ matrix.environment }}/tfplan
+          retention-days: 5
+
+      # ===== Status Check ======================================================
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

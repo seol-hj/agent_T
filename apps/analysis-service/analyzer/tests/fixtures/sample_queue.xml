@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queue-export xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <data timestep="0.00">
+        <edge id="e_0" queueing_time="0.00" queueing_length="0.00" queueing_length_ahead_of_traffic_light="0.00"/>
+        <edge id="e_1" queueing_time="0.00" queueing_length="0.00" queueing_length_ahead_of_traffic_light="0.00"/>
+    </data>
+    <data timestep="60.00">
+        <edge id="e_0" queueing_time="15.50" queueing_length="25.00" queueing_length_ahead_of_traffic_light="20.00"/>
+        <edge id="e_1" queueing_time="10.20" queueing_length="18.00" queueing_length_ahead_of_traffic_light="15.00"/>
+    </data>
+    <data timestep="120.00">
+        <edge id="e_0" queueing_time="12.30" queueing_length="20.00" queueing_length_ahead_of_traffic_light="16.00"/>
+        <edge id="e_1" queueing_time="8.50" queueing_length="14.00" queueing_length_ahead_of_traffic_light="11.00"/>
+    </data>
+</queue-export>

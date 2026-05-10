@@ -1,0 +1,87 @@
+# ============================================================================
+# terraform.tfvars 예시 (dev) — 실제 값을 채워 terraform.tfvars 로 복사 후 사용.
+# terraform.tfvars 는 .gitignore 됨. 절대 커밋 금지.
+#
+# 시크릿(DB 비밀번호, API 키 등) 은 여기 넣지 말 것 → AWS Secrets Manager 로.
+# ============================================================================
+
+project_name = "agent-t"
+env          = "dev"
+region       = "ap-northeast-2"
+
+# dev VPC CIDR — prod(10.20.0.0/16) 와 겹치지 않도록 분리.
+vpc_cidr = "10.10.0.0/16"
+azs      = ["ap-northeast-2a", "ap-northeast-2c"]
+
+# NAT Gateway:
+#  - false (기본): private-app 서브넷에 인터넷 라우트 없음 — VPC Endpoint 만으로 동작.
+#                   EKS 노드는 ECR/S3/STS 등을 endpoint 로 접근. 컨테이너가 외부
+#                   인터넷(예: pip install, apt) 가 필요하면 true 로 바꾸거나
+#                   사전에 이미지에 포함시킬 것.
+#  - true + single_nat_gateway=true: NAT 1개로 공유 (월 ~$32 + 트래픽).
+enable_nat_gateway = false
+single_nat_gateway = true
+
+# VPC Endpoints — NAT off 모드에서는 사실상 모두 켜야 동작.
+# 리전이 Bedrock 미지원이거나 콘솔에서 Foundation Model access 가 enable 안 된 경우 false.
+enable_bedrock_endpoint    = true
+enable_kms_endpoint        = true
+enable_cloudwatch_endpoint = true
+
+# S3 lifecycle — dev 는 artifact 30 일 만료로 비용 통제.
+# rag_source / reports / model_data 는 dev 에서도 보존 (필요 시 키 추가).
+s3_lifecycle_rules = {
+  artifact = {
+    enabled                            = true
+    expiration_days                    = 30
+    noncurrent_version_expiration_days = 30
+  }
+}
+
+# ECR — dev 는 MUTABLE 로 재푸시 허용 (CI 재시도, 로컬 빌드 반복 편의).
+# prod 는 IMMUTABLE 가 default 이므로 별도 설정 불필요.
+ecr_image_tag_mutability = "MUTABLE"
+
+# ==== RDS 설정 ====
+# dev: 작은 인스턴스, Single-AZ, 백업 7일, 삭제 보호 off
+rds_instance_class        = "db.t4g.micro"
+rds_allocated_storage     = 20
+rds_max_allocated_storage = 100
+rds_multi_az              = false
+rds_backup_retention_days = 7
+rds_deletion_protection   = false
+rds_skip_final_snapshot   = true
+
+# ==== Redis 설정 ====
+# dev: 작은 노드, single node, Multi-AZ off, 스냅샷 5일
+redis_node_type              = "cache.t4g.micro"
+redis_num_cache_clusters     = 1
+redis_multi_az_enabled       = false
+redis_automatic_failover_enabled = false
+redis_snapshot_retention_limit = 5
+
+# ==== EKS 설정 ====
+# dev: public endpoint 허용 (개발 편의), t3.medium 노드 2-4개
+eks_kubernetes_version                   = "1.30"
+eks_cluster_endpoint_public_access       = true
+eks_cluster_endpoint_private_access      = true
+eks_cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]  # 필요 시 회사 IP로 제한
+
+eks_node_groups = {
+  general = {
+    instance_types = ["t3.medium"]
+    desired_size   = 2
+    min_size       = 1
+    max_size       = 4
+    disk_size      = 50
+    capacity_type  = "ON_DEMAND"
+    labels = {
+      workload = "general"
+    }
+  }
+}
+
+tags = {
+  owner = "platform"
+  cost  = "engineering-dev"
+}

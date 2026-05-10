@@ -1,0 +1,137 @@
+# ============================================================================
+# AWS Load Balancer Controller - Prod Environment
+# Helm Chart: https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller
+# ============================================================================
+
+# 클러스터 이름 (반드시 실제 클러스터 이름으로 교체)
+clusterName: agent-t-prod-eks
+
+# AWS 리전
+region: ap-northeast-2
+
+# VPC ID (Terraform output에서 가져오거나 수동 설정)
+vpcId: ""  # install-platform.sh에서 자동으로 설정
+
+# ServiceAccount 설정 (IRSA)
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    # IRSA Role ARN (Terraform IRSA 모듈 출력 또는 수동 설정)
+    eks.amazonaws.com/role-arn: ""  # install-platform.sh에서 자동으로 설정
+
+# 이미지 설정
+image:
+  repository: public.ecr.aws/eks/aws-load-balancer-controller
+  tag: v2.7.1
+  pullPolicy: IfNotPresent
+
+# Replica 수 (prod: 2+ 고가용성)
+replicaCount: 2
+
+# 리소스 제한 (prod: 더 큰 리소스)
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 500Mi
+
+# Node Selector
+nodeSelector:
+  workload: general
+
+# Pod Anti-Affinity (고가용성을 위해 다른 노드에 배치)
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - aws-load-balancer-controller
+      topologyKey: kubernetes.io/hostname
+
+# Webhook 설정
+enableCertManager: false
+enableShield: true   # prod는 DDoS 보호 활성화
+enableWaf: false
+enableWafv2: true    # prod는 WAFv2 활성화
+
+# 로깅 레벨 (prod: info)
+logLevel: info
+
+# IngressClass 설정
+ingressClass: alb
+ingressClassParams:
+  create: true
+  name: alb
+  spec:
+    scheme: internet-facing
+    ipAddressType: ipv4
+    tags:
+    - key: Environment
+      value: prod
+    - key: ManagedBy
+      value: aws-load-balancer-controller
+
+# Webhook TLS 인증서 (cert-manager 미사용 시 자동 생성)
+webhookTLS:
+  caCert: ""
+  cert: ""
+  key: ""
+
+# 추가 환경 변수
+env: []
+
+# 추가 args
+extraArgs: []
+
+# Pod Security Context
+securityContext:
+  fsGroup: 65534
+  runAsNonRoot: true
+
+# Pod Disruption Budget (최소 1개 유지)
+podDisruptionBudget:
+  minAvailable: 1
+
+# Metrics
+metrics:
+  enabled: true
+  port: 8080
+
+# Health check
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+# Service Monitor (Prometheus Operator 사용 시)
+serviceMonitor:
+  enabled: true
+  interval: 30s
+
+# Priority Class (중요 컴포넌트이므로 높은 우선순위)
+priorityClassName: system-cluster-critical
+
+# Tolerations
+tolerations: []
+
+# Default Tags (모든 ALB/NLB에 자동 추가)
+defaultTags:
+  Environment: prod
+  ManagedBy: aws-load-balancer-controller
+  Project: agent-t
+  Tier: production

@@ -1,0 +1,103 @@
+# ============================================================================
+# terraform.tfvars 예시 (prod) — 실제 값을 채워 terraform.tfvars 로 복사 후 사용.
+# terraform.tfvars 는 .gitignore 됨. 절대 커밋 금지.
+#
+# 시크릿(DB 비밀번호, API 키 등) 은 여기 넣지 말 것 → AWS Secrets Manager 로.
+# prod 는 인스턴스 크기·Multi-AZ·삭제보호 등을 안전한 기본값으로 운영한다.
+# ============================================================================
+
+project_name = "agent-t"
+env          = "prod"
+region       = "ap-northeast-2"
+
+# prod VPC CIDR — dev(10.10.0.0/16) 와 충돌하지 않도록 분리.
+vpc_cidr = "10.20.0.0/16"
+azs      = ["ap-northeast-2a", "ap-northeast-2b", "ap-northeast-2c"]
+
+# NAT Gateway: prod 는 AZ별 NAT (HA), 비용은 NAT 3개 + 트래픽으로 증가.
+enable_nat_gateway = true
+single_nat_gateway = false
+
+# VPC Endpoints — prod 는 모두 켜는 것을 표준으로 한다.
+enable_bedrock_endpoint    = true
+enable_kms_endpoint        = true
+enable_cloudwatch_endpoint = true
+
+# S3 lifecycle — prod 는 현재 객체는 보존, 과거 버전만 90 일 후 정리.
+# (versioning 으로 인해 누적되는 비용 통제 + 사고 복구 윈도우 확보)
+s3_lifecycle_rules = {
+  artifact = {
+    enabled                            = true
+    noncurrent_version_expiration_days = 90
+  }
+  reports = {
+    enabled                            = true
+    noncurrent_version_expiration_days = 365
+  }
+}
+
+# ECR — prod 는 IMMUTABLE (default). 명시적으로 두어 의도 가시화.
+ecr_image_tag_mutability = "IMMUTABLE"
+
+# ==== RDS 설정 ====
+# prod: 큰 인스턴스, Multi-AZ, 백업 30일, 삭제 보호 on
+rds_instance_class        = "db.r7g.large"
+rds_allocated_storage     = 100
+rds_max_allocated_storage = 500
+rds_multi_az              = true
+rds_backup_retention_days = 30
+rds_deletion_protection   = true
+rds_skip_final_snapshot   = false
+
+# ==== Redis 설정 ====
+# prod: 큰 노드, replica + failover, Multi-AZ on, 스냅샷 30일
+redis_node_type                  = "cache.r7g.large"
+redis_num_cache_clusters         = 2
+redis_multi_az_enabled           = true
+redis_automatic_failover_enabled = true
+redis_snapshot_retention_limit   = 30
+
+# ==== EKS 설정 ====
+# prod: private endpoint만 허용 (보안), m5.large 노드 3-6개, SUMO compute 별도 노드
+eks_kubernetes_version                   = "1.30"
+eks_cluster_endpoint_public_access       = false
+eks_cluster_endpoint_private_access      = true
+eks_cluster_endpoint_public_access_cidrs = []  # public 접근 비활성화
+
+eks_node_groups = {
+  general = {
+    instance_types = ["m5.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 6
+    disk_size      = 100
+    capacity_type  = "ON_DEMAND"
+    labels = {
+      workload = "general"
+    }
+  }
+  sumo-compute = {
+    instance_types = ["c5.2xlarge"]
+    desired_size   = 1
+    min_size       = 0
+    max_size       = 5
+    disk_size      = 200
+    capacity_type  = "SPOT"
+    labels = {
+      workload = "sumo-compute"
+    }
+    taints = [
+      {
+        key    = "workload"
+        value  = "sumo"
+        effect = "NoSchedule"
+      }
+    ]
+  }
+}
+
+tags = {
+  owner = "platform"
+  cost  = "engineering-prod"
+  tier  = "production"
+}

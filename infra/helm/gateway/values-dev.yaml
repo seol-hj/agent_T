@@ -1,0 +1,50 @@
+# ============================================================================
+# Gateway - Dev Environment Override
+# ============================================================================
+
+ingress:
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/tags: Environment=dev,ManagedBy=kubernetes
+
+  hosts:
+    - host: agent-t.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port: 3000
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: api-service
+              port: 8000
+        - path: /agent
+          pathType: Prefix
+          backend:
+            service:
+              name: agent-service
+              port: 8000
+        - path: /simulation
+          pathType: Prefix
+          backend:
+            service:
+              name: simulation-service
+              port: 8000
+        - path: /analysis
+          pathType: Prefix
+          backend:
+            service:
+              name: analysis-service
+              port: 8000
+        - path: /reports
+          pathType: Prefix
+          backend:
+            service:
+              name: report-service
+              port: 8000

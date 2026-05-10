@@ -1,0 +1,142 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=agent_t
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_DB=agent_t_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - agent-t
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_t -d agent_t_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Pipeline Service (E2E 오케스트레이션)
+  pipeline:
+    build:
+      context: .
+      dockerfile: apps/pipeline/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - AGENT_SERVICE_URL=http://agent-service:8001
+      - SIMULATION_SERVICE_URL=http://simulation-service:8005
+      - ANALYSIS_SERVICE_URL=http://analysis-service:8006
+      - REPORT_SERVICE_URL=http://report-service:8007
+      - PORT=8000
+      - LLM_PROVIDER=mock
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_PATH=/data
+      - DATABASE_URL=postgresql://agent_t:dev_password@postgres:5432/agent_t_db
+    volumes:
+      - storage-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agent-service:
+        condition: service_started
+      simulation-service:
+        condition: service_started
+      analysis-service:
+        condition: service_started
+      report-service:
+        condition: service_started
+    networks:
+      - agent-t
+
+  # Agent Service (Orchestrator + Scenario Builder)
+  agent-service:
+    build:
+      context: .
+      dockerfile: apps/agent-service/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - LLM_PROVIDER=mock
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_PATH=/data
+    volumes:
+      - storage-data:/data
+    networks:
+      - agent-t
+
+  # Simulation Service (Network + Demand + Runner)
+  simulation-service:
+    build:
+      context: .
+      dockerfile: apps/simulation-service/Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_PATH=/data
+      - SUMO_EXECUTOR_TYPE=dry_run
+    volumes:
+      - storage-data:/data
+    networks:
+      - agent-t
+
+  # Analysis Service (Analyzer)
+  analysis-service:
+    build:
+      context: .
+      dockerfile: apps/analysis-service/Dockerfile
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_PATH=/data
+    volumes:
+      - storage-data:/data
+    networks:
+      - agent-t
+
+  # Report Service (Reporter)
+  report-service:
+    build:
+      context: .
+      dockerfile: apps/report-service/Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      - PORT=8007
+      - LLM_PROVIDER=mock
+      - STORAGE_PROVIDER=local
+      - STORAGE_BASE_PATH=/data
+    volumes:
+      - storage-data:/data
+    networks:
+      - agent-t
+
+  # Frontend (Next.js 14)
+  frontend:
+    build:
+      context: apps/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - NODE_ENV=development
+    depends_on:
+      - pipeline
+    networks:
+      - agent-t
+
+networks:
+  agent-t:
+    driver: bridge
+
+volumes:
+  storage-data:
+  postgres-data:

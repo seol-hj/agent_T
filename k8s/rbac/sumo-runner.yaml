@@ -1,0 +1,97 @@
+---
+# ServiceAccount for SUMO Runner Jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sumo-runner
+  namespace: agent-t
+  labels:
+    app: sumo-runner
+    component: simulation
+
+---
+# Role for SUMO Runner
+# Job을 생성하는 서비스에서 사용
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sumo-runner-creator
+  namespace: agent-t
+  labels:
+    app: sumo-runner
+    component: simulation
+rules:
+  # Job 생성, 조회, 삭제
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+
+  # Job 상태 조회
+  - apiGroups: ["batch"]
+    resources: ["jobs/status"]
+    verbs: ["get"]
+
+  # Pod 로그 조회 (디버깅용)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+
+---
+# RoleBinding for simulator-runner service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: simulator-runner-job-creator
+  namespace: agent-t
+  labels:
+    app: sumo-runner
+    component: simulation
+subjects:
+  - kind: ServiceAccount
+    name: agent-t-app  # simulator-runner 서비스의 ServiceAccount
+    namespace: agent-t
+roleRef:
+  kind: Role
+  name: sumo-runner-creator
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Role for SUMO Runner Job (Job 내부에서 실행)
+# 현재는 특별한 권한 불필요 (기본 ServiceAccount 사용)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sumo-runner-job
+  namespace: agent-t
+  labels:
+    app: sumo-runner
+    component: simulation
+rules:
+  # Job이 실행되면서 필요한 권한 (현재 없음)
+  # 향후 ConfigMap/Secret 접근이 필요하면 추가
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+
+---
+# RoleBinding for SUMO Runner Job
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sumo-runner-job
+  namespace: agent-t
+  labels:
+    app: sumo-runner
+    component: simulation
+subjects:
+  - kind: ServiceAccount
+    name: sumo-runner
+    namespace: agent-t
+roleRef:
+  kind: Role
+  name: sumo-runner-job
+  apiGroup: rbac.authorization.k8s.io

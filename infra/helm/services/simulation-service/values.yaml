@@ -1,0 +1,152 @@
+# ============================================================================
+# API Service - Default Values
+# Environment별로 values-dev.yaml, values-prod.yaml로 override
+# ============================================================================
+
+# Replica 수
+replicaCount: 2
+
+# 이미지 설정
+image:
+  repository: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/agent-t-dev/simulation-service
+  pullPolicy: IfNotPresent
+  tag: "latest"  # CI에서 자동으로 업데이트 (sha-<commit>)
+
+# Image Pull Secrets (ECR 인증은 IRSA로 처리하므로 불필요)
+imagePullSecrets: []
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations:
+    # IRSA Role ARN (Terraform output에서 가져와 values-dev.yaml에 설정)
+    eks.amazonaws.com/role-arn: ""
+  name: "simulation-service"
+
+# Pod Annotations
+podAnnotations: {}
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+
+# Service 설정
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+  annotations: {}
+
+# Resource 제한
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Liveness Probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness Probe
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# HPA (Horizontal Pod Autoscaler)
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node Selector
+nodeSelector:
+  workload: general
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - simulation-service
+        topologyKey: kubernetes.io/hostname
+
+# ConfigMap 설정
+config:
+  # 애플리케이션 설정
+  LOG_LEVEL: "info"
+  API_PORT: "8000"
+  CORS_ORIGINS: "*"
+
+  # Database (RDS)
+  DB_HOST: ""  # Terraform output에서 가져와 values-dev.yaml에 설정
+  DB_PORT: "5432"
+  DB_NAME: "agent_t"
+
+  # Redis
+  REDIS_HOST: ""  # Terraform output
+  REDIS_PORT: "6379"
+
+  # S3
+  S3_BUCKET_RAG_SOURCE: "agent-t-dev-rag-source"
+  S3_BUCKET_ARTIFACT: "agent-t-dev-artifact"
+  S3_BUCKET_REPORTS: "agent-t-dev-reports"
+
+  # AWS Region
+  AWS_REGION: "ap-northeast-2"
+
+# Secrets (Secrets Manager ARN - IRSA로 접근)
+secrets:
+  # DB credentials secret ARN
+  dbSecretArn: ""
+  # Redis auth secret ARN
+  redisSecretArn: ""
+  # App secrets ARN
+  appSecretArn: ""
+
+# Environment Variables (추가)
+extraEnv: []
+# - name: CUSTOM_VAR
+#   value: "custom-value"
+
+# Priority Class
+priorityClassName: ""
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1

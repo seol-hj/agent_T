@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services-dev
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: api-service
+        namespace: default
+      - name: agent-service
+        namespace: default
+      - name: simulation-service
+        namespace: default
+      - name: analysis-service
+        namespace: default
+      - name: report-service
+        namespace: default
+      - name: frontend
+        namespace: default
+
+  template:
+    metadata:
+      name: '{{name}}'
+      labels:
+        app.kubernetes.io/name: '{{name}}'
+        environment: dev
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+
+    spec:
+      project: default
+
+      source:
+        repoURL: https://github.com/YOUR_ORG/agent-t.git
+        targetRevision: develop
+        path: 'infra/helm/services/{{name}}'
+        helm:
+          valueFiles:
+            - values-dev.yaml
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      revisionHistoryLimit: 10

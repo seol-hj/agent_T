@@ -1,0 +1,12 @@
+apiVersion: v2
+name: gateway
+description: Agent T API Gateway - ALB Ingress with path-based routing
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - ingress
+  - alb
+  - gateway
+maintainers:
+  - name: Agent T Team

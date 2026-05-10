@@ -1,0 +1,107 @@
+# ============================================================================
+# Terraform Apply Workflow
+# main 브랜치 merge 후 수동 승인으로 apply 실행
+# ============================================================================
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      auto-approve:
+        description: "Auto approve (skip manual confirmation)"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: ap-northeast-2
+  TF_VERSION: 1.6.0
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://console.aws.amazon.com/
+
+    steps:
+      # ===== Checkout ==========================================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ===== Setup Terraform ===================================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # ===== Configure AWS Credentials =========================================
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ===== Terraform Init ====================================================
+      - name: Terraform Init
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=agent-t-${{ inputs.environment }}-terraform-state" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+
+      # ===== Terraform Plan ====================================================
+      - name: Terraform Plan
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: |
+          terraform plan -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+
+      # ===== Display Plan ======================================================
+      - name: Display Plan
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: cat plan.txt
+
+      # ===== Manual Approval (Optional) ========================================
+      - name: Manual Approval
+        if: ${{ !inputs.auto-approve }}
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ""  # GitHub repo admins만 승인 가능
+          minimum-approvals: 1
+          issue-title: "Terraform Apply Approval - ${{ inputs.environment }}"
+          issue-body: |
+            Please review the Terraform plan and approve to proceed with apply.
+
+            **Environment:** ${{ inputs.environment }}
+            **Triggered by:** @${{ github.actor }}
+
+            [View Plan](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      # ===== Terraform Apply ===================================================
+      - name: Terraform Apply
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: terraform apply -auto-approve tfplan
+
+      # ===== Output Summary ====================================================
+      - name: Output Summary
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: |
+          echo "### ✅ Terraform Apply Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Outputs" >> $GITHUB_STEP_SUMMARY
+          terraform output -json >> $GITHUB_STEP_SUMMARY

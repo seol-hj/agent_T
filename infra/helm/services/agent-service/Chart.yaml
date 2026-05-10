@@ -1,0 +1,13 @@
+apiVersion: v2
+name: agent-service
+description: Agent T Agent Service - AI Agent (Orchestrator + Scenario Builder)
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - ai
+  - llm
+  - orchestrator
+  - scenario
+maintainers:
+  - name: Agent T Team

@@ -1,0 +1,85 @@
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Secrets / Env ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+**/credentials.json
+
+# --- Terraform ---
+**/.terraform/
+**/.terraform.tfstate*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# .terraform.lock.hcl 은 커밋한다 (의존성 락 파일)
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- Node / Frontend ---
+node_modules/
+.next/
+out/
+.nuxt/
+.svelte-kit/
+.parcel-cache/
+*.tsbuildinfo
+.npm/
+.pnp.*
+.yarn/cache
+.yarn/install-state.gz
+
+# --- Go ---
+bin/
+*.test
+*.out
+
+# --- Docker / build artifacts ---
+*.tar
+*.tgz
+
+# --- Logs ---
+*.log
+logs/
+
+# --- 시뮬레이션 산출물 (로컬 실험) ---
+# CI/배포 산출물은 S3로 보냄. 로컬 실행 결과물은 커밋하지 않는다.
+local-runs/
+sumo-output/
+**/*.net.xml.bak
+
+# --- Archive (백업, 단발성 문서) ---
+.archive/

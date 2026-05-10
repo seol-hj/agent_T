@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<summary xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <step time="0.00" loaded="10" inserted="10" running="10" waiting="0" ended="0"
+          meanWaitingTime="0.00" meanTravelTime="0.00" meanSpeed="10.50" meanSpeedRelative="0.75"
+          duration="0" halting="2" vaporized="0"/>
+    <step time="60.00" loaded="20" inserted="18" running="18" waiting="2" ended="2"
+          meanWaitingTime="5.50" meanTravelTime="120.00" meanSpeed="12.30" meanSpeedRelative="0.88"
+          duration="60000" halting="3" vaporized="0"/>
+    <step time="120.00" loaded="30" inserted="28" running="26" waiting="2" ended="4"
+          meanWaitingTime="6.20" meanTravelTime="118.50" meanSpeed="13.10" meanSpeedRelative="0.94"
+          duration="120000" halting="2" vaporized="0"/>
+</summary>

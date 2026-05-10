@@ -1,0 +1,26 @@
+# SUMO Job Runner Dockerfile
+# Kubernetes Job으로 실행되는 SUMO Runner
+
+FROM sumo:1.18.0
+
+WORKDIR /app
+
+# Python 설치
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 의존성 설치
+RUN pip3 install --no-cache-dir \
+    httpx==0.25.1 \
+    aiofiles==23.2.1
+
+# Job runner 스크립트 복사
+COPY apps/simulator-runner/job-runner.py /app/job-runner.py
+
+# SUMO가 PATH에 있는지 확인
+ENV PATH="/usr/local/bin:${PATH}"
+
+# 실행
+CMD ["python3", "/app/job-runner.py"]
