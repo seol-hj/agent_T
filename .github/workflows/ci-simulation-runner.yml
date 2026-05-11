@@ -21,10 +21,11 @@ env:
   AWS_REGION: ap-northeast-2
 
 jobs:
-  build-and-push:
+  determine-env:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-
+    outputs:
+      ecr-repo: ${{ steps.env.outputs.ecr-repo }}
     steps:
       - name: Determine environment
         id: env
@@ -35,17 +36,22 @@ jobs:
             echo "ecr-repo=agent-t-dev/simulation-runner" >> $GITHUB_OUTPUT
           fi
 
-      - uses: ./.github/workflows/build-and-push.yml
-        with:
-          service-name: ${{ env.SERVICE_NAME }}
-          dockerfile-path: apps/simulation-runner/Dockerfile
-          context-path: apps/simulation-runner
-          ecr-repository: ${{ steps.env.outputs.ecr-repo }}
-          # SUMO 테스트는 skip (이미지 크기가 크고 테스트 환경 복잡)
-          skip-tests: true
-        secrets:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  build-and-push:
+    needs: determine-env
+    uses: ./.github/workflows/build-and-push.yml
+    if: github.event_name == 'push'
+    with:
+      service-name: simulation-runner
+      dockerfile-path: apps/simulation-runner/Dockerfile
+      context-path: apps/simulation-runner
+      ecr-repository: ${{ needs.determine-env.outputs.ecr-repo }}
+      test-command: |
+        pip install -r requirements.txt
+        pytest tests/
+      skip-tests: false
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   build-validation:
     runs-on: ubuntu-latest
@@ -59,4 +65,4 @@ jobs:
           context: apps/simulation-runner
           file: apps/simulation-runner/Dockerfile
           push: false
-          tags: ${{ env.SERVICE_NAME }}:${{ github.sha }}
+          tags: simulation-runner:${{ github.sha }}

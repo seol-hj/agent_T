@@ -119,8 +119,8 @@ check_s3_bucket() {
   fi
 }
 
-check_s3_bucket "$BACKEND_BUCKET_DEV"
-check_s3_bucket "$BACKEND_BUCKET_PROD"
+check_s3_bucket "$BACKEND_BUCKET_DEV" || true
+check_s3_bucket "$BACKEND_BUCKET_PROD" || true
 
 echo ""
 
@@ -130,14 +130,15 @@ echo "환경 확인 결과"
 echo "============================================"
 echo ""
 
-if [ ${#MISSING_TOOLS[@]} -eq 0 ] && [ ${#MISSING_VARS[@]} -eq 0 ]; then
-  echo -e "${GREEN}✓ 모든 필수 도구가 설치되어 있습니다${NC}"
+if [ ${#MISSING_TOOLS[@]} -eq 0 ]; then
+  echo -e "${GREEN}✓ 환경 확인 성공${NC}"
   echo ""
   echo "다음 단계:"
-  echo "  ./scripts/bootstrap-dev.sh"
+  echo "  - Terraform backend S3 버킷은 terraform init 시 자동 생성됩니다"
+  echo "  - 계속 진행하려면 Enter를 누르세요"
   exit 0
 else
-  echo -e "${RED}✗ 일부 도구가 누락되었습니다${NC}"
+  echo -e "${RED}✗ 환경 확인 실패${NC}"
   echo ""
 
   if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then

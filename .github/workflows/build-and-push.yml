@@ -122,6 +122,47 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
+      # ===== Update Helm Chart Image Tag ======================================
+      - name: Update Helm values image tag
+        run: |
+          SERVICE_NAME="${{ inputs.service-name }}"
+          HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
+
+          if [ -f "$HELM_VALUES_PATH" ]; then
+            # yq 설치 (YAML 파서)
+            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod +x /usr/local/bin/yq
+
+            # 이미지 태그 업데이트
+            yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
+
+            echo "✅ Updated $HELM_VALUES_PATH"
+            echo "New image tag: ${{ steps.meta.outputs.image-tag }}"
+            cat "$HELM_VALUES_PATH"
+          else
+            echo "⚠️ Warning: $HELM_VALUES_PATH not found"
+            exit 1
+          fi
+
+      # ===== Commit and Push Manifest Changes ==================================
+      - name: Commit manifest changes
+        run: |
+          SERVICE_NAME="${{ inputs.service-name }}"
+          HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add "$HELM_VALUES_PATH"
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(helm): update ${{ inputs.service-name }} image to ${{ steps.meta.outputs.image-tag }}"
+            git push
+            echo "✅ Manifest updated and pushed"
+          fi
+
       # ===== Summary ===========================================================
       - name: Summary
         run: |
@@ -130,3 +171,5 @@ jobs:
           echo "**Service:** ${{ inputs.service-name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image Tag:** ${{ steps.meta.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image URI:** ${{ steps.meta.outputs.image-uri }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 Argo CD will automatically sync the changes within 3 minutes." >> $GITHUB_STEP_SUMMARY

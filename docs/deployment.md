@@ -72,7 +72,7 @@ aws configure
 ./scripts/bootstrap-dev.sh
 ```
 
-자세한 내용: [docs/rebuild-environment.md](./docs/rebuild-environment.md)
+자세한 내용: [docs/troubleshooting.md](./docs/troubleshooting.md)
 
 ---
 
@@ -854,7 +854,7 @@ aws ec2 describe-vpc-endpoints --region ap-northeast-2
 
 ## 📚 추가 참고 자료
 
-- [환경 재구축 가이드](./rebuild-environment.md) - 전체 환경 자동 구축
+- [환경 재구축 가이드](./troubleshooting.md) - 전체 환경 자동 구축
 - [SUMO 통합 가이드](./sumo-integration.md) - SUMO 실제 통합 상세 ✅
 - [프로젝트 달성도 분석](./project-comparison.md) - 완성도 85%
 - [Observability 아키텍처](./observability.md) - 로깅, 메트릭, 추적

@@ -22,7 +22,7 @@ NC='\033[0m'
 
 # 환경 변수
 export ENV="dev"
-export AWS_REGION="${AWS_REGION:-ap-northeast-2}"
+export AWS_REGION="ap-northeast-2"
 
 # ============================================================================
 # Checkpoint 함수
@@ -106,7 +106,7 @@ if [ "$LAST_STEP" -lt 1 ]; then
     echo ""
     echo -e "${RED}✗ 환경 확인 실패${NC}"
     echo "  필수 도구를 먼저 설치하세요."
-    echo "  가이드: docs/rebuild-environment.md"
+    echo "  가이드: DEPLOYMENT.md"
     echo ""
     echo "재시작: ./scripts/bootstrap-dev.sh"
     exit 1
@@ -199,7 +199,7 @@ if [ "$LAST_STEP" -lt 4 ]; then
   echo "  - Argo CD"
   echo ""
 
-  if ! "$SCRIPT_DIR/install-platform.sh"; then
+  if ! "$SCRIPT_DIR/install-platform.sh" dev all; then
     echo ""
     echo -e "${RED}✗ 플랫폼 설치 실패${NC}"
     echo ""

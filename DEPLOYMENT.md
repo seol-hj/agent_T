@@ -605,7 +605,7 @@ terraform destroy
 | 문서 | 설명 |
 |------|------|
 | [docs/deployment.md](./docs/deployment.md) | AWS 배포 상세 가이드 |
-| [docs/rebuild-environment.md](./docs/rebuild-environment.md) | 환경 재구축 가이드 (627줄) |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | AWS 배포 가이드 |
 | [docs/observability.md](./docs/observability.md) | 관측성 아키텍처 |
 | [CLAUDE.md](./CLAUDE.md) | 프로젝트 설계 원칙 |
 

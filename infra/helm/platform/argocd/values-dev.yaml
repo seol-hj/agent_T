@@ -11,21 +11,20 @@ server:
   replicas: 1
 
   # Ingress 설정 (ALB)
+  # 보안상 Argo CD는 외부 노출 금지 - kubectl port-forward 사용 권장
+  # 필요 시 internal ALB만 허용
   ingress:
-    enabled: true
+    enabled: false  # Port-forward 사용: kubectl port-forward -n argocd svc/argocd-server 8080:80
     ingressClassName: alb
     annotations:
-      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/scheme: internal  # 내부망 전용
       alb.ingress.kubernetes.io/target-type: ip
-      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-      alb.ingress.kubernetes.io/ssl-redirect: '443'
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
       alb.ingress.kubernetes.io/healthcheck-path: /healthz
       alb.ingress.kubernetes.io/backend-protocol: HTTP
       alb.ingress.kubernetes.io/tags: Environment=dev,ManagedBy=argocd
-      # HTTPS 설정 (Certificate Manager ARN으로 교체)
-      # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:123456789012:certificate/...
     hosts:
-      - argocd.dev.agent-t.local
+      - argocd.internal.agent-t.local
     paths:
       - /
     pathType: Prefix

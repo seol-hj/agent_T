@@ -35,3 +35,11 @@ secrets:
   dbSecretArn: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:agent-t-dev-db-credentials"
   redisSecretArn: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:agent-t-dev-redis-auth"
   appSecretArn: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:agent-t-dev-app-secrets"
+
+ingress:
+  enabled: true
+  hosts:
+    - host: seolphung.com
+      paths:
+        - path: /
+          pathType: Prefix

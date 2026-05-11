@@ -76,8 +76,77 @@ LLM에게 결정론적 계산(수치 분석, XML 생성, 파일 IO)을 시키지
 
 ## 명령어 / 빌드 / 테스트
 
-> 아직 구현되지 않았다. 단계가 진행되면서 이 섹션을 갱신한다.
-> 새 도구나 명령이 추가될 때마다 이 영역에 반영할 것.
+### 로컬 개발 환경
+```bash
+# Docker Compose로 전체 시스템 실행
+docker compose up --build
+
+# 개별 서비스 테스트
+./scripts/test-services-local.sh
+
+# 스키마 검증
+./scripts/validate-schemas.py
+```
+
+### AWS 배포
+```bash
+# 전체 인프라 구축 (VPC, EKS, RDS, S3 등)
+./scripts/bootstrap-dev.sh
+
+# Terraform만 실행
+cd infra/terraform/envs/dev
+terraform init
+terraform apply
+
+# Kubernetes 설정 동기화
+./scripts/sync-kubeconfig.sh
+
+# 플랫폼 컴포넌트 설치 (ALB Controller, Argo CD)
+./scripts/install-platform.sh
+
+# Argo CD Applications 등록
+./scripts/register-argocd-apps.sh
+```
+
+### Argo CD 접속
+```bash
+# Port-forward (권장)
+kubectl port-forward -n argocd svc/argocd-server 8080:80
+# 브라우저: http://localhost:8080
+
+# 초기 비밀번호
+kubectl get secret -n argocd argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d
+```
+
+### CI/CD
+```bash
+# 코드 변경 후 자동 배포
+git add apps/frontend/
+git commit -m "feat: update UI"
+git push origin main
+
+# GitHub Actions → ECR 푸시 → Helm values 업데이트 → Argo CD 배포
+```
+
+### 트러블슈팅
+```bash
+# EKS 노드 확인
+kubectl get nodes
+
+# Pod 상태 확인
+kubectl get pods -A
+
+# 로그 확인
+kubectl logs -n agent-t -l app=frontend --tail=50
+
+# ALB 확인
+kubectl get ingress -A
+
+# Terraform 상태 확인
+cd infra/terraform/envs/dev
+terraform output
+```
 
 ## 참고
 

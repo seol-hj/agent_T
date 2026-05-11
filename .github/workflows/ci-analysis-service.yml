@@ -20,10 +20,11 @@ env:
   AWS_REGION: ap-northeast-2
 
 jobs:
-  build-and-push:
+  determine-env:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-
+    outputs:
+      ecr-repo: ${{ steps.env.outputs.ecr-repo }}
     steps:
       - name: Determine environment
         id: env
@@ -34,18 +35,22 @@ jobs:
             echo "ecr-repo=agent-t-dev/analysis-service" >> $GITHUB_OUTPUT
           fi
 
-      - uses: ./.github/workflows/build-and-push.yml
-        with:
-          service-name: ${{ env.SERVICE_NAME }}
-          dockerfile-path: apps/analysis-service/Dockerfile
-          context-path: apps/analysis-service
-          ecr-repository: ${{ steps.env.outputs.ecr-repo }}
-          test-command: |
-            pip install -r requirements.txt
-            pytest tests/
-        secrets:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  build-and-push:
+    needs: determine-env
+    uses: ./.github/workflows/build-and-push.yml
+    if: github.event_name == 'push'
+    with:
+      service-name: analysis-service
+      dockerfile-path: apps/analysis-service/Dockerfile
+      context-path: apps/analysis-service
+      ecr-repository: ${{ needs.determine-env.outputs.ecr-repo }}
+      test-command: |
+        pip install -r requirements.txt
+        pytest tests/
+      skip-tests: false
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   build-validation:
     runs-on: ubuntu-latest
@@ -59,4 +64,4 @@ jobs:
           context: apps/analysis-service
           file: apps/analysis-service/Dockerfile
           push: false
-          tags: ${{ env.SERVICE_NAME }}:${{ github.sha }}
+          tags: analysis-service:${{ github.sha }}

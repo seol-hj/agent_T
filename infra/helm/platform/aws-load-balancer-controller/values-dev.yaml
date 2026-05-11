@@ -10,7 +10,7 @@ clusterName: agent-t-dev-eks
 region: ap-northeast-2
 
 # VPC ID (Terraform output에서 가져오거나 수동 설정)
-vpcId: ""  # install-platform.sh에서 자동으로 설정
+vpcId: "vpc-07d5f9ec286624682"  # install-platform.sh에서 자동으로 설정
 
 # ServiceAccount 설정 (IRSA)
 serviceAccount:
@@ -18,7 +18,7 @@ serviceAccount:
   name: aws-load-balancer-controller
   annotations:
     # IRSA Role ARN (Terraform IRSA 모듈 출력 또는 수동 설정)
-    eks.amazonaws.com/role-arn: ""  # install-platform.sh에서 자동으로 설정
+    eks.amazonaws.com/role-arn: "arn:aws:iam::190484841865:role/agent-t-dev-aws-load-balancer-controller-irsa"  # install-platform.sh에서 자동으로 설정
 
 # 이미지 설정
 image:
