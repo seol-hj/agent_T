@@ -12,11 +12,13 @@ on:
     branches: [main]
     paths:
       - "apps/agent-service/**"
+      - "libs/**"
       - ".github/workflows/ci-agent-service.yml"
   pull_request:
     branches: [main]
     paths:
       - "apps/agent-service/**"
+      - "libs/**"
 
 env:
   SERVICE_NAME: agent-service

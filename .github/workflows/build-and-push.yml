@@ -160,7 +160,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # gitops/dev 브랜치로 checkout 및 업데이트 (재시도 로직 포함)
-          MAX_RETRIES=5
+          MAX_RETRIES=15
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
@@ -185,7 +185,14 @@ jobs:
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
               echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
-              sleep $((RETRY_COUNT * 2))  # Exponential backoff
+
+              # Exponential backoff with jitter (randomization)
+              BASE_DELAY=$((RETRY_COUNT * 3))
+              JITTER=$((RANDOM % 5))
+              SLEEP_TIME=$((BASE_DELAY + JITTER))
+              echo "Waiting ${SLEEP_TIME}s before retry..."
+              sleep $SLEEP_TIME
+
               git reset --soft HEAD~1  # Undo commit for retry
             fi
           done
