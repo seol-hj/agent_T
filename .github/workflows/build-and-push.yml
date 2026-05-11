@@ -151,7 +151,7 @@ jobs:
           fi
 
       # ===== Commit and Push Manifest Changes ==================================
-      - name: Commit manifest changes
+      - name: Commit manifest changes to GitOps branch
         run: |
           SERVICE_NAME="${{ inputs.service-name }}"
           HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
@@ -159,14 +159,18 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+          # gitops/dev 브랜치로 checkout (없으면 생성)
+          git fetch origin gitops/dev || true
+          git checkout -B gitops/dev origin/gitops/dev || git checkout -B gitops/dev
+
           git add "$HELM_VALUES_PATH"
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "chore(helm): update ${{ inputs.service-name }} image to ${{ steps.meta.outputs.image-tag }}"
-            git push
-            echo "✅ Manifest updated and pushed"
+            git push origin gitops/dev
+            echo "✅ Manifest updated and pushed to gitops/dev branch"
           fi
 
       # ===== Summary ===========================================================
