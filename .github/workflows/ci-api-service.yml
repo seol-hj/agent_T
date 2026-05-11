@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - main
-      - develop
     paths:
       - "apps/api-service/**"
       - ".github/workflows/ci-api-service.yml"
@@ -20,7 +19,6 @@ on:
   pull_request:
     branches:
       - main
-      - develop
     paths:
       - "apps/api-service/**"
       - ".github/workflows/ci-api-service.yml"
