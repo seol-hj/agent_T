@@ -30,7 +30,7 @@ jobs:
         id: env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "ecr-repo=agent-t-prod/agent-service" >> $GITHUB_OUTPUT
+            echo "ecr-repo=agent-t-dev/agent-service" >> $GITHUB_OUTPUT
           else
             echo "ecr-repo=agent-t-dev/agent-service" >> $GITHUB_OUTPUT
           fi
@@ -42,7 +42,7 @@ jobs:
     with:
       service-name: agent-service
       dockerfile-path: apps/agent-service/Dockerfile
-      context-path: apps/agent-service
+      context-path: .  # 루트 context (libs/ 접근 필요)
       ecr-repository: ${{ needs.determine-env.outputs.ecr-repo }}
       test-command: |
         pip install -r requirements.txt
