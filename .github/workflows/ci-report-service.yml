@@ -9,12 +9,12 @@ permissions:
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/report-service/**"
       - ".github/workflows/ci-report-service.yml"
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/report-service/**"
 

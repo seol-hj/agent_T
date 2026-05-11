@@ -9,12 +9,12 @@ permissions:
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/simulation-service/**"
       - ".github/workflows/ci-simulation-service.yml"
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/simulation-service/**"
 
