@@ -31,8 +31,20 @@ secrets:
   appSecretArn: "arn:aws:secretsmanager:ap-northeast-2:190484841865:secret:agent-t-dev-app-secrets"
 ingress:
   enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:190484841865:certificate/03e82b5c-961c-43ea-93d5-027c5e9d1d6c
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/tags: Environment=dev,Service=frontend,ManagedBy=helm
   hosts:
-    - host: seolphung.com
+    - host: agent.seolphung.com
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - hosts:
+        - agent.seolphung.com
