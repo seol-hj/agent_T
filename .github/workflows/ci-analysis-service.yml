@@ -64,7 +64,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
-          context: apps/analysis-service
+          context: .
           file: apps/analysis-service/Dockerfile
           push: false
           tags: analysis-service:${{ github.sha }}

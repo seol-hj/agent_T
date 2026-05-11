@@ -159,19 +159,39 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # gitops/dev 브랜치로 checkout (없으면 생성)
-          git fetch origin gitops/dev || true
-          git checkout -B gitops/dev origin/gitops/dev || git checkout -B gitops/dev
+          # gitops/dev 브랜치로 checkout 및 업데이트 (재시도 로직 포함)
+          MAX_RETRIES=5
+          RETRY_COUNT=0
 
-          git add "$HELM_VALUES_PATH"
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            # 최신 gitops/dev 가져오기
+            git fetch origin gitops/dev || true
+            git checkout -B gitops/dev origin/gitops/dev || git checkout -B gitops/dev
 
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
+            # values 파일 업데이트
+            git add "$HELM_VALUES_PATH"
+
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+              exit 0
+            fi
+
             git commit -m "chore(helm): update ${{ inputs.service-name }} image to ${{ steps.meta.outputs.image-tag }}"
-            git push origin gitops/dev
-            echo "✅ Manifest updated and pushed to gitops/dev branch"
-          fi
+
+            # Push 시도 (충돌 시 재시도)
+            if git push origin gitops/dev; then
+              echo "✅ Manifest updated and pushed to gitops/dev branch"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+              sleep $((RETRY_COUNT * 2))  # Exponential backoff
+              git reset --soft HEAD~1  # Undo commit for retry
+            fi
+          done
+
+          echo "❌ Failed to push after $MAX_RETRIES attempts"
+          exit 1
 
       # ===== Summary ===========================================================
       - name: Summary
