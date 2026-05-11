@@ -9,12 +9,12 @@ permissions:
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/agent-service/**"
       - ".github/workflows/ci-agent-service.yml"
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/agent-service/**"
 

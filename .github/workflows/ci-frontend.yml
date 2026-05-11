@@ -9,12 +9,12 @@ permissions:
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/frontend/**"
       - ".github/workflows/ci-frontend.yml"
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - "apps/frontend/**"
 
