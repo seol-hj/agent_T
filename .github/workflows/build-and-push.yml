@@ -170,11 +170,14 @@ jobs:
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # 최신 gitops/dev 가져오기
-            git fetch origin gitops/dev || true
-            git checkout -B gitops/dev origin/gitops/dev || git checkout -B gitops/dev
+            # 로컬 변경사항 완전히 제거 후 최신 gitops/dev 동기화
+            git fetch origin gitops/dev
+            git checkout gitops/dev 2>/dev/null || git checkout -b gitops/dev origin/gitops/dev
+            git reset --hard origin/gitops/dev
+            git clean -fd
 
             # values 파일 업데이트
+            yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
             git add "$HELM_VALUES_PATH"
 
             if git diff --staged --quiet; then
@@ -193,7 +196,6 @@ jobs:
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                 echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
                 sleep 2
-                git reset --soft HEAD~1
               fi
             fi
           done
