@@ -5,14 +5,18 @@ WORKDIR /app
 
 # 시스템 패키지 업데이트
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
+# 공통 라이브러리 복사
+COPY libs /app/libs
+
 # Python 의존성 설치
-COPY requirements.txt .
+COPY apps/api-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 애플리케이션 코드 복사
-COPY . .
+COPY apps/api-service /app
 
 # 비root 사용자 생성 및 전환
 RUN useradd -m -u 1000 appuser && \

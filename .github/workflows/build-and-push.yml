@@ -5,6 +5,9 @@
 
 name: Build and Push Docker Image
 
+permissions:
+  contents: write  # Git push 권한
+
 on:
   workflow_call:
     inputs:
@@ -63,6 +66,9 @@ jobs:
       # ===== Checkout ==========================================================
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # 전체 히스토리 가져오기 (git push 위해)
 
       # ===== Set up Docker Buildx =============================================
       - name: Set up Docker Buildx
