@@ -3,15 +3,12 @@
 # ============================================================================
 
 replicaCount: 1
-
 image:
   repository: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/agent-t-dev/report-service
-  tag: "sha-a1b2c3d"  # CI에서 자동 업데이트
-
+  tag: "sha-a1b470b" # CI에서 자동 업데이트
 serviceAccount:
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/agent-t-dev-report-service-irsa"
-
 resources:
   requests:
     cpu: 50m
@@ -19,10 +16,8 @@ resources:
   limits:
     cpu: 200m
     memory: 256Mi
-
 autoscaling:
   enabled: false
-
 config:
   LOG_LEVEL: "debug"
   DB_HOST: "agent-t-dev-postgres.xxxx.ap-northeast-2.rds.amazonaws.com"
@@ -34,7 +29,6 @@ config:
   LLM_MODEL_ID: "anthropic.claude-3-5-sonnet-20241022-v2:0"
   STORAGE_PROVIDER: "s3"
   PORT: "8007"
-
 secrets:
   dbSecretArn: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:agent-t-dev-db-credentials"
   redisSecretArn: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:agent-t-dev-redis-auth"
