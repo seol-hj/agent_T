@@ -64,7 +64,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
-          context: apps/simulation-service
+          context: .
           file: apps/simulation-service/Dockerfile
           push: false
           tags: simulation-service:${{ github.sha }}
