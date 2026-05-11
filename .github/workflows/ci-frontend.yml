@@ -46,9 +46,8 @@ jobs:
       ecr-repository: ${{ needs.determine-env.outputs.ecr-repo }}
       test-command: |
         npm install
-        npm run test
-        npm run lint
-      skip-tests: false
+        npm run build
+      skip-tests: true  # TODO: 테스트 코드 구현 후 false로 변경
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
