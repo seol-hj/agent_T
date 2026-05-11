@@ -133,51 +133,42 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-      # ===== Update Helm Chart Image Tag ======================================
-      - name: Update Helm values image tag
+      # ===== Update Helm values and Push to GitOps branch =====================
+      - name: Update Helm values and push to GitOps branch
         run: |
           SERVICE_NAME="${{ inputs.service-name }}"
           HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
 
-          if [ -f "$HELM_VALUES_PATH" ]; then
-            # yq 설치 (YAML 파서)
-            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-            sudo chmod +x /usr/local/bin/yq
-
-            # 이미지 태그 업데이트
-            yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
-
-            echo "✅ Updated $HELM_VALUES_PATH"
-            echo "New image tag: ${{ steps.meta.outputs.image-tag }}"
-            cat "$HELM_VALUES_PATH"
-          else
-            echo "⚠️ Warning: $HELM_VALUES_PATH not found"
-            exit 1
-          fi
-
-      # ===== Commit and Push Manifest Changes ==================================
-      - name: Commit manifest changes to GitOps branch
-        run: |
-          SERVICE_NAME="${{ inputs.service-name }}"
-          HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
+          # yq 설치
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # gitops/dev 브랜치로 checkout 및 업데이트
-          # concurrency로 직렬화되므로 재시도 로직 최소화
           MAX_RETRIES=3
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             # 로컬 변경사항 완전히 제거 후 최신 gitops/dev 동기화
+            git reset --hard HEAD
+            git clean -fd
             git fetch origin gitops/dev
             git checkout gitops/dev 2>/dev/null || git checkout -b gitops/dev origin/gitops/dev
             git reset --hard origin/gitops/dev
-            git clean -fd
 
-            # values 파일 업데이트
+            # values 파일이 존재하는지 확인
+            if [ ! -f "$HELM_VALUES_PATH" ]; then
+              echo "⚠️ Warning: $HELM_VALUES_PATH not found"
+              exit 1
+            fi
+
+            # 이미지 태그 업데이트
             yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
+
+            echo "✅ Updated $HELM_VALUES_PATH to ${{ steps.meta.outputs.image-tag }}"
+
             git add "$HELM_VALUES_PATH"
 
             if git diff --staged --quiet; then
