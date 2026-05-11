@@ -12,11 +12,13 @@ on:
     branches: [main]
     paths:
       - "apps/analysis-service/**"
+      - "libs/**"
       - ".github/workflows/ci-analysis-service.yml"
   pull_request:
     branches: [main]
     paths:
       - "apps/analysis-service/**"
+      - "libs/**"
 
 env:
   SERVICE_NAME: analysis-service
