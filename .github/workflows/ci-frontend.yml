@@ -30,7 +30,7 @@ jobs:
         id: env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "ecr-repo=agent-t-prod/frontend" >> $GITHUB_OUTPUT
+            echo "ecr-repo=agent-t-dev/frontend" >> $GITHUB_OUTPUT
           else
             echo "ecr-repo=agent-t-dev/frontend" >> $GITHUB_OUTPUT
           fi
