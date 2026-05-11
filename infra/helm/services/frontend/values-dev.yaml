@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: 190484841865.dkr.ecr.ap-northeast-2.amazonaws.com/agent-t-dev/frontend
-  tag: "sha-a1b2c3d"  # CI에서 자동 업데이트
+  tag: "sha-ce604f5"  # CI에서 자동 업데이트
 
 serviceAccount:
   annotations:

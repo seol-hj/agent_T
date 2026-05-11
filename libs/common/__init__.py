@@ -5,11 +5,15 @@ Common Libraries
 """
 
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from .gateways.storage import StorageGateway, LocalStorageGateway, S3StorageGateway
 from .gateways.llm import LLMGateway, BedrockLLMGateway, MockLLMProvider
 from .models.llm_response import LLMResponse, LLMUsageMetadata
+
+# TYPE_CHECKING을 사용하여 타입 힌트만 import (런타임 에러 방지)
+if TYPE_CHECKING:
+    from .rag import Retriever  # type: ignore
 # from .rag import Retriever, InMemoryRetriever, VectorRetriever  # TODO: RAG 모듈 구현 후 활성화
 
 
@@ -53,7 +57,7 @@ def get_llm_gateway() -> LLMGateway:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
 
-def get_rag_retriever() -> Retriever:
+def get_rag_retriever() -> "Retriever":  # type: ignore
     """
     RAG Retriever 팩토리 함수
 
