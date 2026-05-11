@@ -156,19 +156,19 @@ ingress:
   enabled: true
   className: alb
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing  # 외부 접속 허용
+    alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-path: /
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-    # HTTPS 활성화 시 주석 해제
-    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:190484841865:certificate/YOUR_CERT_ID
-    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    # alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'  # HTTP → HTTPS 강제 리다이렉트
+    # HTTPS 인증서는 values-dev.yaml, values-prod.yaml에서 환경별로 설정
     alb.ingress.kubernetes.io/tags: Environment=dev,Service=frontend,ManagedBy=helm
   hosts:
-    - host: seolphung.com
+    - host: agent.seolphung.com  # 환경별로 오버라이드 (agent-dev.seolphung.com / agent.seolphung.com)
       paths:
         - path: /
           pathType: Prefix
-  tls: []
+  tls:
+    - hosts:
+        - agent.seolphung.com  # 환경별로 오버라이드
