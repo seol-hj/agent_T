@@ -5,6 +5,9 @@
 
 name: CI - API Service
 
+permissions:
+  contents: write  # Git push 권한 (build-and-push.yml 호출 시 필요)
+
 on:
   push:
     branches:
