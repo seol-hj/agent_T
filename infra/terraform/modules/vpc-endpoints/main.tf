@@ -70,7 +70,7 @@ locals {
 # Interface endpoint 의 ENI 가 사용. VPC 내부에서 443 으로만 도달 가능.
 resource "aws_security_group" "endpoints" {
   name        = "${local.name_prefix}-vpce-sg"
-  description = "VPC Interface Endpoint SG — HTTPS from within VPC."
+  description = "VPC Interface Endpoint SG - HTTPS from within VPC"
   vpc_id      = var.vpc_id
 
   ingress {

@@ -10,7 +10,7 @@ from typing import Optional
 from .gateways.storage import StorageGateway, LocalStorageGateway, S3StorageGateway
 from .gateways.llm import LLMGateway, BedrockLLMGateway, MockLLMProvider
 from .models.llm_response import LLMResponse, LLMUsageMetadata
-from .rag import Retriever, InMemoryRetriever, VectorRetriever
+# from .rag import Retriever, InMemoryRetriever, VectorRetriever  # TODO: RAG 모듈 구현 후 활성화
 
 
 def get_storage_gateway() -> StorageGateway:

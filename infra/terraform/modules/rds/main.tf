@@ -88,8 +88,9 @@ resource "aws_db_parameter_group" "this" {
 
   # PostgreSQL 성능 튜닝 파라미터 (환경에 따라 조정)
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
 
   parameter {

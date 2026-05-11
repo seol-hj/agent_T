@@ -469,4 +469,4 @@ kubectl describe ingress gateway
 - [GitOps with Argo CD](./gitops.md)
 - [CI/CD Pipeline](./cicd.md)
 - [EKS 클러스터 관리](./eks.md)
-- [환경 재구성 가이드](./rebuild-environment.md)
+- [환경 재구성 가이드](./troubleshooting.md)

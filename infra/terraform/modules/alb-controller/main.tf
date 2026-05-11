@@ -1,13 +1,26 @@
 # ============================================================================
 # module: alb-controller
-# 책임: AWS Load Balancer Controller 설치 + IRSA + IAM Policy.
+# 책임: AWS Load Balancer Controller IAM Policy 생성
 # 활성화 단계: 5
-# 메모:
-#   - NGINX Ingress 사용 금지 — 본 컨트롤러로 ALB/NLB 프로비저닝
-#   - 공식 IAM 정책: https://github.com/kubernetes-sigs/aws-load-balancer-controller
-#     → 모듈에 정책 JSON 또는 aws_iam_policy_document 로 동기화 (버전 핀)
-#   - helm_release "aws-load-balancer-controller" (kube-system namespace)
-#   - 활성화 전제: kubernetes / helm provider 활성화 + EKS OIDC provider 존재
 # ============================================================================
 
-# 구현은 5단계에서 추가된다.
+locals {
+  name_prefix = "${var.project_name}-${var.env}"
+  base_tags   = var.tags
+}
+
+# ==== ALB Controller IAM Policy =============================================
+# 공식 정책: https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/install/iam_policy.json
+data "http" "alb_controller_policy" {
+  url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.7.1/docs/install/iam_policy.json"
+}
+
+resource "aws_iam_policy" "alb_controller" {
+  name        = "${local.name_prefix}-alb-controller-policy"
+  description = "IAM policy for AWS Load Balancer Controller"
+  policy      = data.http.alb_controller_policy.response_body
+
+  tags = merge(local.base_tags, {
+    Name = "${local.name_prefix}-alb-controller-policy"
+  })
+}

@@ -150,7 +150,7 @@ install_alb_controller() {
     local ROLE_ARN=""
     if command -v terraform &> /dev/null && [ -d "$PROJECT_ROOT/infra/terraform/envs/$ENV" ]; then
         cd "$PROJECT_ROOT/infra/terraform/envs/$ENV"
-        ROLE_ARN=$(terraform output -raw irsa_alb_controller_role_arn 2>/dev/null || echo "")
+        ROLE_ARN=$(terraform output -raw alb_controller_role_arn 2>/dev/null || echo "")
         cd - > /dev/null
     fi
 

@@ -435,7 +435,7 @@ docker-compose build agent-service 2>&1 | tee build.log
 - [서비스 상세 문서](../docs/services.md)
 - [GitOps 배포](../docs/gitops.md)
 - [CI/CD 파이프라인](../docs/cicd.md)
-- [환경 재구축](../docs/rebuild-environment.md)
+- [AWS 배포](../DEPLOYMENT.md)
 - [정리 계획](../CLEANUP_PLAN.md)
 
 ---
