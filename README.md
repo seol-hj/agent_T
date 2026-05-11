@@ -126,11 +126,13 @@ agent-t/
 | 서비스 | 포트 | 역할 |
 |--------|------|------|
 | **Frontend** | 3000 | Next.js 14 웹 UI, 실시간 모니터링 |
-| **Pipeline** | 8000 | E2E 파이프라인 오케스트레이터, DB 연동 |
-| **Agent Service** | 8001 | AI 에이전트, 시나리오 생성 |
-| **Simulation Service** | 8005 | OSM → SUMO 네트워크 + 수요 + 실행 |
-| **Analysis Service** | 8006 | KPI 분석 (통행 시간, 속도, 혼잡도) |
-| **Report Service** | 8007 | 정책 리포트 생성 (AI 요약) |
+| **API Service** | 8000 | RESTful API Gateway |
+| **Agent Service** | 8000 | AI 에이전트, 시나리오 생성 (Orchestrator 통합) |
+| **Simulation Service** | 8000 | OSM → SUMO 네트워크 + 수요 + 실행 (통합) |
+| **Analysis Service** | 8000 | KPI 분석 (통행 시간, 속도, 혼잡도) |
+| **Report Service** | 8000 | 정책 리포트 생성 (AI 요약) |
+
+**Note**: 모든 백엔드 서비스는 표준 포트 8000 사용 (ClusterIP로 격리)
 
 ### 기술 스택
 
@@ -205,6 +207,9 @@ docker compose up --build
 - **[cicd.md](./docs/cicd.md)** - CI/CD 파이프라인
 - **[troubleshooting.md](./docs/troubleshooting.md)** - 문제 해결
 - **[contributing.md](./docs/contributing.md)** - 개발 기여 가이드
+- **[EXTERNAL-ACCESS-GUIDE.md](./docs/EXTERNAL-ACCESS-GUIDE.md)** - 외부 접속 설정
+- **[ARCHITECTURE-COMPLIANCE.md](./docs/ARCHITECTURE-COMPLIANCE.md)** - 아키텍처 준수 점검
+- **[ARCHIVE-INDEX.md](./docs/ARCHIVE-INDEX.md)** - 보관 파일 목록
 
 ### 프로젝트 규칙
 - **[CLAUDE.md](./CLAUDE.md)** - Claude Code를 위한 프로젝트 가이드라인
@@ -238,6 +243,6 @@ docker compose up --build
 
 ---
 
-**버전**: 0.5.0  
+**버전**: 1.0.0  
 **최종 업데이트**: 2026-05-11  
-**상태**: ✅ 인프라 100% 완료, 외부 접속 설정 대기 중
+**상태**: ✅ Production Ready - 모든 서비스 정상 작동, 외부 접속 가능
