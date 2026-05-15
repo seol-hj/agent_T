@@ -1,4 +1,5 @@
 # Frontend Dockerfile (Next.js 14)
+# Trigger rebuild for port 3000
 
 FROM node:20-alpine AS base
 

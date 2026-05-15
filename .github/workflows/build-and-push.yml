@@ -8,6 +8,11 @@ name: Build and Push Docker Image
 permissions:
   contents: write  # Git push 권한
 
+# 동시성 제어: gitops/dev 브랜치 업데이트를 직렬화
+concurrency:
+  group: gitops-dev-update
+  cancel-in-progress: false  # 대기열에 추가 (취소하지 않음)
+
 on:
   workflow_call:
     inputs:
@@ -128,47 +133,42 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-      # ===== Update Helm Chart Image Tag ======================================
-      - name: Update Helm values image tag
+      # ===== Update Helm values and Push to GitOps branch =====================
+      - name: Update Helm values and push to GitOps branch
         run: |
           SERVICE_NAME="${{ inputs.service-name }}"
           HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
 
-          if [ -f "$HELM_VALUES_PATH" ]; then
-            # yq 설치 (YAML 파서)
-            sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-            sudo chmod +x /usr/local/bin/yq
-
-            # 이미지 태그 업데이트
-            yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
-
-            echo "✅ Updated $HELM_VALUES_PATH"
-            echo "New image tag: ${{ steps.meta.outputs.image-tag }}"
-            cat "$HELM_VALUES_PATH"
-          else
-            echo "⚠️ Warning: $HELM_VALUES_PATH not found"
-            exit 1
-          fi
-
-      # ===== Commit and Push Manifest Changes ==================================
-      - name: Commit manifest changes to GitOps branch
-        run: |
-          SERVICE_NAME="${{ inputs.service-name }}"
-          HELM_VALUES_PATH="infra/helm/services/${SERVICE_NAME}/values-dev.yaml"
+          # yq 설치
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # gitops/dev 브랜치로 checkout 및 업데이트 (재시도 로직 포함)
-          MAX_RETRIES=15
+          # gitops/dev 브랜치로 checkout 및 업데이트
+          MAX_RETRIES=3
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # 최신 gitops/dev 가져오기
-            git fetch origin gitops/dev || true
-            git checkout -B gitops/dev origin/gitops/dev || git checkout -B gitops/dev
+            # 로컬 변경사항 완전히 제거 후 최신 gitops/dev 동기화
+            git reset --hard HEAD
+            git clean -fd
+            git fetch origin gitops/dev
+            git checkout gitops/dev 2>/dev/null || git checkout -b gitops/dev origin/gitops/dev
+            git reset --hard origin/gitops/dev
 
-            # values 파일 업데이트
+            # values 파일이 존재하는지 확인
+            if [ ! -f "$HELM_VALUES_PATH" ]; then
+              echo "⚠️ Warning: $HELM_VALUES_PATH not found"
+              exit 1
+            fi
+
+            # 이미지 태그 업데이트
+            yq eval ".image.tag = \"${{ steps.meta.outputs.image-tag }}\"" -i "$HELM_VALUES_PATH"
+
+            echo "✅ Updated $HELM_VALUES_PATH to ${{ steps.meta.outputs.image-tag }}"
+
             git add "$HELM_VALUES_PATH"
 
             if git diff --staged --quiet; then
@@ -178,22 +178,16 @@ jobs:
 
             git commit -m "chore(helm): update ${{ inputs.service-name }} image to ${{ steps.meta.outputs.image-tag }}"
 
-            # Push 시도 (충돌 시 재시도)
+            # Push 시도
             if git push origin gitops/dev; then
               echo "✅ Manifest updated and pushed to gitops/dev branch"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
-
-              # Exponential backoff with jitter (randomization)
-              BASE_DELAY=$((RETRY_COUNT * 3))
-              JITTER=$((RANDOM % 5))
-              SLEEP_TIME=$((BASE_DELAY + JITTER))
-              echo "Waiting ${SLEEP_TIME}s before retry..."
-              sleep $SLEEP_TIME
-
-              git reset --soft HEAD~1  # Undo commit for retry
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Push failed, retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+                sleep 2
+              fi
             fi
           done
 
