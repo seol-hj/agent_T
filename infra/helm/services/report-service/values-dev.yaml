@@ -5,7 +5,7 @@
 replicaCount: 1
 image:
   repository: 190484841865.dkr.ecr.ap-northeast-2.amazonaws.com/agent-t-dev/report-service
-  tag: "sha-a1b470b" # CI에서 자동 업데이트
+  tag: "sha-0a871c8" # CI에서 자동 업데이트
 serviceAccount:
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::190484841865:role/agent-t-dev-report-service-irsa"

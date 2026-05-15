@@ -3,15 +3,12 @@
 # ============================================================================
 
 replicaCount: 1
-
 image:
   repository: 190484841865.dkr.ecr.ap-northeast-2.amazonaws.com/agent-t-dev/frontend
-  tag: "sha-ce604f5"  # CI에서 자동 업데이트
-
+  tag: "sha-0a871c8" # CI에서 자동 업데이트
 serviceAccount:
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::190484841865:role/agent-t-dev-frontend-irsa"
-
 resources:
   requests:
     cpu: 50m
@@ -19,10 +16,8 @@ resources:
   limits:
     cpu: 200m
     memory: 256Mi
-
 autoscaling:
   enabled: false
-
 config:
   LOG_LEVEL: "debug"
   DB_HOST: "agent-t-dev-postgres.xxxx.ap-northeast-2.rds.amazonaws.com"
@@ -30,16 +25,26 @@ config:
   S3_BUCKET_RAG_SOURCE: "agent-t-dev-rag-source"
   S3_BUCKET_ARTIFACT: "agent-t-dev-artifact"
   S3_BUCKET_REPORTS: "agent-t-dev-reports"
-
 secrets:
   dbSecretArn: "arn:aws:secretsmanager:ap-northeast-2:190484841865:secret:agent-t-dev-db-credentials"
   redisSecretArn: "arn:aws:secretsmanager:ap-northeast-2:190484841865:secret:agent-t-dev-redis-auth"
   appSecretArn: "arn:aws:secretsmanager:ap-northeast-2:190484841865:secret:agent-t-dev-app-secrets"
-
 ingress:
   enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:190484841865:certificate/03e82b5c-961c-43ea-93d5-027c5e9d1d6c
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/tags: Environment=dev,Service=frontend,ManagedBy=helm
   hosts:
-    - host: seolphung.com
+    - host: agent.seolphung.com
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - hosts:
+        - agent.seolphung.com
